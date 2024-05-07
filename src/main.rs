@@ -4,8 +4,12 @@ use crossterm::{
     terminal, cursor, style::{self, Stylize}
 };
 
+mod sprite;
+
 fn main() -> io::Result<()> {
   let mut stdout = io::stdout();
+
+  let mut sprite = sprite::Sprite::load("sprites/bob.txt");
 
   stdout.execute(terminal::Clear(terminal::ClearType::All))?;
 
@@ -19,6 +23,8 @@ fn main() -> io::Result<()> {
       }
     }
   }
+
+  sprite.draw(0.0);
   stdout.flush()?;
   Ok(())
 }
