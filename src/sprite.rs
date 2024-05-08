@@ -35,7 +35,7 @@ impl Sprite {
             character_rows[current_row].push(unwraped_line);
         }
         let stdout_handle = io::stdout();
-        let translation = Translation { pos_x:0, pos_y:0 };
+        let translation = Translation { pos_x:1, pos_y:1 };
         return Ok(Sprite{ character_rows, frames_per_second : 1, stdout_handle, translation, current_frame : 0.0 });
     }
 

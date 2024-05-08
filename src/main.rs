@@ -1,18 +1,31 @@
 use std::io::{self, Write};
 use std::fs;
 use crossterm::{
-    ExecutableCommand, QueueableCommand,
-    terminal, cursor, style::{self, Stylize}
+    ExecutableCommand,
+    terminal,
 };
 
 mod sprite;
 
+#[cfg(not(debug_assertions))]
 const SPRITE_FOLDER : &str = "sprites";
+#[cfg(debug_assertions)]
+const SPRITE_FOLDER_DEBUG : &str = "..\\..\\..\\sprites";
+
+#[cfg(debug_assertions)]
+fn sprite_folder_path() -> &'static str{
+  return SPRITE_FOLDER_DEBUG
+}
+
+#[cfg(not(debug_assertions))]
+fn sprite_folder_path() -> &'static str{
+  return SPRITE_FOLDER;
+}
 
 fn load_sprites() -> Result<Vec<sprite::Sprite>, io::Error> {
   let mut sprites = Vec::<sprite::Sprite>::new();
   let mut path = std::env::current_exe()?;
-  path.push(SPRITE_FOLDER);
+  path.push(sprite_folder_path());
 
   let dir = fs::read_dir(path)?;
   for entry in dir {
@@ -32,17 +45,6 @@ fn main() -> io::Result<()> {
   let sprites = load_sprites()?;
 
   stdout.execute(terminal::Clear(terminal::ClearType::All))?;
-
-  for y in 0..40 {
-    for x in 0..150 {
-      if (y == 0 || y == 40 - 1) || (x == 0 || x == 150 - 1) {
-        // in this loop we are more efficient by not flushing the buffer.
-        stdout
-          .queue(cursor::MoveTo(x,y))?
-          .queue(style::PrintStyledContent( "█".magenta()))?;
-      }
-    }
-  }
 
   for mut sprite in sprites {
     sprite.draw(0.0);
