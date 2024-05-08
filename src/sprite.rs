@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader, Stdout};
+use std::path::PathBuf;
 use crossterm::{
     QueueableCommand,
     cursor, style::{self}
@@ -19,13 +20,13 @@ pub struct Sprite{
 }
 
 impl Sprite {
-    pub fn load(path:&str) -> Self {
-        let file = File::open(path).unwrap();
+    pub fn load(path:&PathBuf) -> Result<Self, io::Error> {
+        let file = File::open(path)?;
         let reader = BufReader::new(file);
         let mut character_rows = Vec::<Vec<String>>::new();
         character_rows.push(Vec::<String>::new());
         for line in reader.lines() {
-            let unwraped_line = line.unwrap();
+            let unwraped_line = line?;
             if unwraped_line.contains("framedivider") {
                 character_rows.push(Vec::<String>::new());
                 continue;
@@ -35,7 +36,7 @@ impl Sprite {
         }
         let stdout_handle = io::stdout();
         let translation = Translation { pos_x:0, pos_y:0 };
-        return Sprite{ character_rows, frames_per_second : 1, stdout_handle, translation, current_frame : 0.0 };
+        return Ok(Sprite{ character_rows, frames_per_second : 1, stdout_handle, translation, current_frame : 0.0 });
     }
 
     pub fn draw(&mut self, delta:f32) {
