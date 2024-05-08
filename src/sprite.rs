@@ -5,24 +5,16 @@ use crossterm::{
     QueueableCommand,
     cursor, style::{self}
 };
+use vector2d::Vector2D;
 
-pub struct Translation {
-    pub pos_x : u16,
-    pub pos_y : u16,
-}
-
-pub struct Sprite{
-    translation : Translation,
-    character_rows : Vec<Vec<String>>,
-    frames_per_second : usize,
-    current_frame : f32,
-    stdout_handle : Stdout,
+pub struct Sprite {
+    character_rows : Vec<Vec<String>>
 }
 
 impl Sprite {
     pub fn load(path:&PathBuf) -> Result<Self, io::Error> {
         let file = File::open(path)?;
-        let reader = BufReader::new(file);
+        let reader: BufReader<File> = BufReader::new(file);
         let mut character_rows = Vec::<Vec<String>>::new();
         character_rows.push(Vec::<String>::new());
         for line in reader.lines() {
@@ -34,17 +26,13 @@ impl Sprite {
             let current_row = character_rows.len() - 1;
             character_rows[current_row].push(unwraped_line);
         }
-        let stdout_handle = io::stdout();
-        let translation = Translation { pos_x:1, pos_y:1 };
-        return Ok(Sprite{ character_rows, frames_per_second : 1, stdout_handle, translation, current_frame : 0.0 });
+        return Ok(Sprite{ character_rows });
     }
 
-    pub fn draw(&mut self, delta:f32) {
-        let current_frame : usize = self.current_frame as usize;
+    pub fn draw(&self, current_frame:usize, mut stdout_handle:&Stdout, translation:&Vector2D<u16>) {
         for line in &self.character_rows[current_frame] {
-            let _ = self.stdout_handle.queue(cursor::MoveTo(self.translation.pos_x, self.translation.pos_y));
-            let _ = self.stdout_handle.queue(style::Print(line));
+            let _ = stdout_handle.queue(cursor::MoveTo(translation.x, translation.y));
+            let _ = stdout_handle.queue(style::Print(line));
         }
-        self.current_frame += delta * self.frames_per_second as f32;
     }
 }

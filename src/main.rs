@@ -6,6 +6,7 @@ use crossterm::{
 };
 
 mod sprite;
+mod enemy;
 
 #[cfg(not(debug_assertions))]
 const SPRITE_FOLDER : &str = "sprites";
@@ -39,15 +40,29 @@ fn load_sprites() -> Result<Vec<sprite::Sprite>, io::Error> {
   return Ok(sprites);
 }
 
+fn load_enemies() -> Result<Vec<enemy::Enemy>, io::Error> {
+  let enemies = Vec::<enemy::Enemy>::new();
+  return Ok(enemies);
+}
+
 fn main() -> io::Result<()> {
   let mut stdout = io::stdout();
 
   let sprites = load_sprites()?;
+  let enemies = load_enemies()?;
+  let mut delta = 0.0;
 
+  //1. Gather user input
+
+  //2. Update state
+
+  //3, Draw state to screen
   stdout.execute(terminal::Clear(terminal::ClearType::All))?;
 
-  for mut sprite in sprites {
-    sprite.draw(0.0);
+  for mut enemy in enemies {
+    enemy.update(delta);
+    let sprite = &sprites[enemy.texture_index];
+    sprite.draw(enemy.current_frame as usize, &stdout, &enemy.translation);
   }
 
   stdout.flush()?;
