@@ -2,10 +2,11 @@ use std::io::{self, Write};
 use std::time::Duration;
 use std::fs;
 use std::time::Instant;
-use crossterm::event::{poll, read, KeyCode};
-use crossterm::{
+use crossterm::event::{poll, read, KeyCode, KeyEvent};
+use crossterm::terminal::enable_raw_mode;
+use crossterm::{ execute,
     ExecutableCommand,
-    terminal,
+    terminal, terminal::{ScrollUp, SetSize, size}
 };
 
 mod sprite;
@@ -50,18 +51,22 @@ fn load_enemies() -> Result<Vec<enemy::Enemy>, io::Error> {
 
 fn main() -> io::Result<()> {
   let mut stdout = io::stdout();
+  // Initialize terminal.
+  enable_raw_mode()?;
+  let (cols, rows) = size()?;
+  execute!(stdout, SetSize(40, 20))?;
 
   let sprites = load_sprites()?;
   let mut enemies = load_enemies()?;
   let mut delta = 0.0;
   
   //1. Gather user input
-  let mut keystrokes = Vec::<KeyCode>::new();
+  let mut keystrokes = Vec::<KeyEvent>::new();
   while poll(Duration::from_secs(0)).is_ok() {
     match read()? {
         crossterm::event::Event::Key(key_event) => 
           if matches!(key_event.kind, crossterm::event::KeyEventKind::Press) {
-            keystrokes.push(key_event.code);
+            keystrokes.push(key_event);
           },
         _ => ()
     }
@@ -75,12 +80,13 @@ fn main() -> io::Result<()> {
 
   //3, Draw state to screen
   stdout.execute(terminal::Clear(terminal::ClearType::All))?;
-
   for enemy in enemies.iter() {
     let sprite = &sprites[enemy.texture_index];
     sprite.draw(enemy.current_frame as usize, &stdout, &enemy.translation);
   }
-
   stdout.flush()?;
+
+  //4. Exit/Cleanup
+  execute!(io::stdout(), SetSize(cols, rows))?;
   Ok(())
 }

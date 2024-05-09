@@ -8,7 +8,7 @@ use crossterm::{
 use vector2d::Vector2D;
 
 pub struct Sprite {
-    character_rows : Vec<Vec<String>>
+    frames : Vec<Vec<String>>
 }
 
 impl Sprite {
@@ -26,11 +26,11 @@ impl Sprite {
             let current_row = character_rows.len() - 1;
             character_rows[current_row].push(unwraped_line);
         }
-        return Ok(Sprite{ character_rows });
+        return Ok(Sprite{ frames: character_rows });
     }
 
     pub fn draw(&self, current_frame:usize, mut stdout_handle:&Stdout, translation:&Vector2D<u16>) {
-        for line in &self.character_rows[current_frame] {
+        for line in self.frames[current_frame].iter() {
             let _ = stdout_handle.queue(cursor::MoveTo(translation.x, translation.y));
             let _ = stdout_handle.queue(style::Print(line));
         }
