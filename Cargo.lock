@@ -46,6 +46,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lerp"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecc56a024593ecbcacb6bb4f8f4ace719eb08ae9b701535640ef3efb0e706260"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.154"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -77,6 +86,15 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys",
+]
+
+[[package]]
+name = "num-traits"
+version = "0.2.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
+dependencies = [
+ "autocfg",
 ]
 
 [[package]]
@@ -122,6 +140,7 @@ name = "roflcopter"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "lerp",
  "vector2d",
 ]
 
