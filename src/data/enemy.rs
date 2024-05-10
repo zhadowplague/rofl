@@ -1,4 +1,3 @@
-use lerp::Lerp;
 use vector2d::Vector2D;
 use crate::utils;
 
@@ -24,10 +23,5 @@ impl EnemyData {
     
     pub fn get_damage(&self) -> usize {
         return f32::max(self.normalized_strength, 1.0) as usize;
-    }
-    
-    pub fn update(&mut self, delta:f32) {        
-        let frames_per_second = 1.0.lerp(6.0, self.normalized_strength) as usize;
-        self.current_frame += delta * frames_per_second as f32;
     }
 }

@@ -8,10 +8,16 @@ use crossterm::{ execute,
     ExecutableCommand,
     terminal, terminal::{SetSize, size}
 };
-use sprite::draw_sprite;
 
-mod sprite;
-mod enemy;
+mod data;
+use crate::data::sprite::Sprite;
+use crate::data::enemy::EnemyData;
+
+mod operations;
+use crate::operations::moving::move_straight;
+use crate::operations::animating::animate;
+use crate::operations::drawing::draw_sprite;
+
 mod utils;
 
 #[cfg(not(debug_assertions))]
@@ -29,8 +35,8 @@ fn sprite_folder_path() -> &'static str{
   return SPRITE_FOLDER;
 }
 
-fn load_sprites() -> Result<Vec<sprite::Sprite>, io::Error> {
-  let mut sprites = Vec::<sprite::Sprite>::new();
+fn load_sprites() -> Result<Vec<Sprite>, io::Error> {
+  let mut sprites = Vec::<Sprite>::new();
   let mut path = std::env::current_exe()?;
   path.push(sprite_folder_path());
 
@@ -38,7 +44,7 @@ fn load_sprites() -> Result<Vec<sprite::Sprite>, io::Error> {
   for entry in dir {
     let u_entry = entry?;
     if u_entry.metadata()?.is_file() {
-      let sprite = sprite::Sprite::load(&u_entry.path())?;
+      let sprite = Sprite::load(&u_entry.path())?;
       sprites.push(sprite);
     }
   }
@@ -56,7 +62,7 @@ fn main() -> io::Result<()> {
   execute!(stdout, SetSize(40, 20))?;
 
   let sprites = load_sprites()?;
-  let mut enemies = Vec::<enemy::EnemyData>::new();
+  let mut enemies = Vec::<EnemyData>::new();
   let mut delta = 0.0;
   let mut health:usize = 50;
 
@@ -81,10 +87,11 @@ fn main() -> io::Result<()> {
 
     //2. Update state
     if enemies.len() < 6 {
-      enemies.push(enemy::EnemyData::new(start.elapsed().as_secs()));
+      enemies.push(EnemyData::new(start.elapsed().as_secs()));
     }
+    animate(&mut enemies, delta);
+    move_straight(&mut enemies, delta);
     for enemy in enemies.iter_mut() {
-      enemy.update(delta);
       if enemy.translation.x < 5.0 && utils::within(enemy.translation.y as u16, 10, 4) {
         let updated_health = health.checked_sub(enemy.get_damage());
         if updated_health.is_some() {
