@@ -8,6 +8,7 @@ use crossterm::{ execute,
     ExecutableCommand,
     terminal, terminal::{SetSize, size}
 };
+use sprite::draw_sprite;
 
 mod sprite;
 mod enemy;
@@ -55,7 +56,7 @@ fn main() -> io::Result<()> {
   execute!(stdout, SetSize(40, 20))?;
 
   let sprites = load_sprites()?;
-  let mut enemies = Vec::<enemy::Enemy>::new();
+  let mut enemies = Vec::<enemy::EnemyData>::new();
   let mut delta = 0.0;
   let mut health:usize = 50;
 
@@ -80,12 +81,12 @@ fn main() -> io::Result<()> {
 
     //2. Update state
     if enemies.len() < 6 {
-      enemies.push(enemy::Enemy::new(start.elapsed().as_secs()));
+      enemies.push(enemy::EnemyData::new(start.elapsed().as_secs()));
     }
     for enemy in enemies.iter_mut() {
       enemy.update(delta);
-      if enemy.translation.x < 5 && utils::within(enemy.translation.y, 10, 4)  {
-        let updated_health = health.checked_sub(enemy.damage);
+      if enemy.translation.x < 5.0 && utils::within(enemy.translation.y as u16, 10, 4) {
+        let updated_health = health.checked_sub(enemy.get_damage());
         if updated_health.is_some() {
           health = updated_health.unwrap();
         }
@@ -103,7 +104,7 @@ fn main() -> io::Result<()> {
     stdout.execute(terminal::Clear(terminal::ClearType::All))?;
     for enemy in enemies.iter() {
       let sprite = &sprites[enemy.texture_index];
-      sprite.draw(enemy.current_frame as usize, &stdout, &enemy.translation);
+      draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout);
     }
     stdout.flush()?;
 

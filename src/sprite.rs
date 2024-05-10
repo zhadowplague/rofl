@@ -11,6 +11,13 @@ pub struct Sprite {
     frames : Vec<Vec<String>>
 }
 
+pub fn draw_sprite(sprite:&Sprite, frame:usize, translation:&Vector2D<f32>, mut stdout_handle:&Stdout) {
+    for line in sprite.frames[frame].iter() {
+        let _ = stdout_handle.queue(cursor::MoveTo(translation.x as u16, translation.y as u16));
+        let _ = stdout_handle.queue(style::Print(line));
+    }
+}
+
 impl Sprite {
     pub fn load(path:&PathBuf) -> Result<Self, io::Error> {
         let file = File::open(path)?;
@@ -27,12 +34,5 @@ impl Sprite {
             character_rows[current_row].push(unwraped_line);
         }
         return Ok(Sprite{ frames: character_rows });
-    }
-
-    pub fn draw(&self, current_frame:usize, mut stdout_handle:&Stdout, translation:&Vector2D<u16>) {
-        for line in self.frames[current_frame].iter() {
-            let _ = stdout_handle.queue(cursor::MoveTo(translation.x, translation.y));
-            let _ = stdout_handle.queue(style::Print(line));
-        }
     }
 }
