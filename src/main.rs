@@ -102,10 +102,6 @@ fn main() -> io::Result<()> {
         }
       }
     }
-
-    if health <= 0 {
-      break;
-    }
     
     //3, Draw state to screen
     stdout.execute(terminal::Clear(terminal::ClearType::All))?;
