@@ -3,7 +3,8 @@ use std::io::{self, prelude::*, BufReader};
 use std::path::PathBuf;
 
 pub struct Sprite {
-    pub frames : Vec<Vec<String>>
+    pub frames : Vec<Vec<String>>,
+    pub max_width : usize
 }
 
 impl Sprite {
@@ -21,6 +22,13 @@ impl Sprite {
             let current_row = character_rows.len() - 1;
             character_rows[current_row].push(unwraped_line);
         }
-        return Ok(Sprite{ frames: character_rows });
+        let mut max_width = 0;
+        for line in character_rows.iter() {
+            let len = line.len();
+            if len > max_width {
+                max_width = len;
+            }
+        }
+        return Ok(Sprite{ frames: character_rows, max_width });
     }
 }

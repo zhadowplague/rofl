@@ -59,7 +59,8 @@ fn main() -> io::Result<()> {
   // Initialize terminal.
   enable_raw_mode()?;
   let (cols, rows) = size()?;
-  execute!(stdout, SetSize(40, 20))?;
+  const GAME_WIDTH : f32 = 30.0;
+  execute!(stdout, SetSize(GAME_WIDTH as u16, 10))?;
 
   let sprites = load_sprites()?;
   let mut enemies = Vec::<EnemyData>::new();
@@ -70,7 +71,7 @@ fn main() -> io::Result<()> {
     let frame_start = Instant::now();
     //1. Handle user input
     let mut keystrokes = Vec::<KeyEvent>::new();
-    while poll(Duration::from_secs(0)).is_ok() {
+    while poll(Duration::from_secs(0)).is_ok_and(|x| x == true) {
       match read()? {
           crossterm::event::Event::Key(key_event) => 
             if matches!(key_event.kind, crossterm::event::KeyEventKind::Press) {
@@ -86,13 +87,13 @@ fn main() -> io::Result<()> {
     }
 
     //2. Update state
-    if enemies.len() < 6 {
-      enemies.push(EnemyData::new(start.elapsed().as_secs()));
+    if enemies.len() < 1 {
+      enemies.push(EnemyData::new(start.elapsed().as_secs(), GAME_WIDTH));
     }
     animate(&mut enemies, delta);
     move_straight(&mut enemies, delta);
     for enemy in enemies.iter_mut() {
-      if enemy.translation.x < 5.0 && utils::within(enemy.translation.y as u16, 10, 4) {
+      if enemy.translation.x < 5.0 {
         let updated_health = health.checked_sub(enemy.get_damage());
         if updated_health.is_some() {
           health = updated_health.unwrap();
@@ -107,11 +108,11 @@ fn main() -> io::Result<()> {
     stdout.execute(terminal::Clear(terminal::ClearType::All))?;
     for enemy in enemies.iter() {
       let sprite = &sprites[enemy.texture_index];
-      draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout);
+      draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout, GAME_WIDTH);
     }
     stdout.flush()?;
 
-    delta = frame_start.elapsed().as_millis() as f32 * 0.001;
+    delta = frame_start.elapsed().as_secs_f32();
   }
 
   //4. Exit/Cleanup
