@@ -4,10 +4,10 @@ use std::fs;
 use std::time::Instant;
 use crossterm::event::{poll, read, KeyCode, KeyEvent, KeyModifiers};
 use crossterm::terminal::enable_raw_mode;
-use crossterm::{ execute,
-    ExecutableCommand,
-    terminal, terminal::{SetSize, size}
+use crossterm::{ 
+  execute, cursor, QueueableCommand, terminal, terminal::{SetSize, size}
 };
+use vector2d::Vector2D;
 
 mod data;
 use crate::data::sprite::Sprite;
@@ -59,8 +59,8 @@ fn main() -> io::Result<()> {
   // Initialize terminal.
   enable_raw_mode()?;
   let (cols, rows) = size()?;
-  const GAME_WIDTH : f32 = 30.0;
-  execute!(stdout, SetSize(GAME_WIDTH as u16, 10))?;
+  let game_size : Vector2D<u16> = Vector2D::new(30, 10);
+  execute!(stdout, SetSize(game_size.x, game_size.y))?;
 
   let sprites = load_sprites()?;
   let mut enemies = Vec::<EnemyData>::new();
@@ -88,13 +88,15 @@ fn main() -> io::Result<()> {
 
     //2. Update state
     if enemies.len() < 1 {
-      enemies.push(EnemyData::new(start.elapsed().as_secs(), GAME_WIDTH));
+      enemies.push(EnemyData::new(start.elapsed().as_secs(), game_size.x as f32));
     }
     animate(&mut enemies, delta);
     move_straight(&mut enemies, delta);
+
     for enemy in enemies.iter_mut() {
       if enemy.translation.x < 5.0 {
         let updated_health = health.checked_sub(enemy.get_damage());
+        
         if updated_health.is_some() {
           health = updated_health.unwrap();
         }
@@ -103,13 +105,15 @@ fn main() -> io::Result<()> {
         }
       }
     }
+    enemies.retain(|x| x.translation.x > 5.0);
     
     //3, Draw state to screen
-    stdout.execute(terminal::Clear(terminal::ClearType::All))?;
+    stdout.queue(terminal::Clear(terminal::ClearType::All))?;
     for enemy in enemies.iter() {
       let sprite = &sprites[enemy.texture_index];
-      draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout, GAME_WIDTH);
+      draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout, game_size);
     }
+    let _ = stdout.queue(cursor::MoveTo(game_size.x, game_size.y));
     stdout.flush()?;
 
     delta = frame_start.elapsed().as_secs_f32();

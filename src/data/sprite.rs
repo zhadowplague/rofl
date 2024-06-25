@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 pub struct Sprite {
     pub frames : Vec<Vec<String>>,
-    pub max_width : usize
+    pub max_width : u16
 }
 
 impl Sprite {
@@ -29,6 +29,6 @@ impl Sprite {
                 max_width = len;
             }
         }
-        return Ok(Sprite{ frames: character_rows, max_width });
+        return Ok(Sprite{ frames: character_rows, max_width : max_width as u16 });
     }
 }
