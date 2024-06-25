@@ -11,3 +11,7 @@ pub fn normalize_usize(min:usize, max:usize, current:usize) -> usize {
     }
     return (current - min) / (max - min);
 }
+
+pub fn rand_range(range:usize) -> usize {
+    return rand::random::<usize>() % range;
+}

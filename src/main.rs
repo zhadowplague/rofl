@@ -7,6 +7,7 @@ use crossterm::terminal::enable_raw_mode;
 use crossterm::{ 
   execute, cursor, QueueableCommand, terminal, terminal::{SetSize, size}
 };
+use utils::rand_range;
 use vector2d::Vector2D;
 
 mod data;
@@ -63,6 +64,7 @@ fn main() -> io::Result<()> {
   execute!(stdout, SetSize(game_size.x, game_size.y))?;
 
   let sprites = load_sprites()?;
+  let mut keystrokes = Vec::<KeyEvent>::new();
   let mut enemies = Vec::<EnemyData>::new();
   let mut delta = 0.0;
   let mut health:usize = 50;
@@ -70,7 +72,6 @@ fn main() -> io::Result<()> {
   'game_loop: loop {
     let frame_start = Instant::now();
     //1. Handle user input
-    let mut keystrokes = Vec::<KeyEvent>::new();
     while poll(Duration::from_secs(0)).is_ok_and(|x| x == true) {
       match read()? {
           crossterm::event::Event::Key(key_event) => 
@@ -80,15 +81,18 @@ fn main() -> io::Result<()> {
           _ => ()
       }
     }
-    for keystroke in keystrokes {
+    for keystroke in keystrokes.iter() {
       if matches!(keystroke.code, KeyCode::Esc) || (matches!(keystroke.code, KeyCode::Char('c')) && matches!(keystroke.modifiers, KeyModifiers::CONTROL)) {
           break 'game_loop;
       }
     }
+    keystrokes.clear();
 
     //2. Update state
     if enemies.len() < 1 {
-      enemies.push(EnemyData::new(start.elapsed().as_secs(), game_size.x as f32));
+      let assigned_sprite = rand_range(sprites.len());
+      let assigned_sprite_height = sprites[assigned_sprite].frames.len();
+      enemies.push(EnemyData::new(start.elapsed().as_secs(), &game_size, assigned_sprite, assigned_sprite_height));
     }
     animate(&mut enemies, delta);
     move_straight(&mut enemies, delta);
@@ -111,7 +115,7 @@ fn main() -> io::Result<()> {
     stdout.queue(terminal::Clear(terminal::ClearType::All))?;
     for enemy in enemies.iter() {
       let sprite = &sprites[enemy.texture_index];
-      draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout, game_size);
+      draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout, &game_size);
     }
     let _ = stdout.queue(cursor::MoveTo(game_size.x, game_size.y));
     stdout.flush()?;
