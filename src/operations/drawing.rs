@@ -9,7 +9,7 @@ use std::io::Stdout;
 pub fn draw_sprite(sprite:&Sprite, frame:usize, translation:&Vector2D<f32>, mut stdout_handle:&Stdout, screen_size:&Vector2D<u16>) {
     let (screen_size_x, screen_size_y) = (screen_size.x - 1, screen_size.y);
     let frame_count = sprite.frames.len();
-    let active_frame = utils::normalize_usize(0, frame_count - 1, frame);
+    let active_frame = utils::normalize_usize(0, frame_count, frame);
     let mut row :u16 = 0;
     let (x,y) = (translation.x as u16, translation.y as u16);
     for line in sprite.frames[active_frame].iter() {

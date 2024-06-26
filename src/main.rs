@@ -98,8 +98,8 @@ fn main() -> io::Result<()> {
     move_straight(&mut enemies, delta);
 
     for enemy in enemies.iter_mut() {
-      if enemy.translation.x < 5.0 {
-        let updated_health = health.checked_sub(enemy.get_damage());
+      if enemy.translation.x < 3.0 {
+        let updated_health = health.checked_sub(enemy.damage);
         
         if updated_health.is_some() {
           health = updated_health.unwrap();
@@ -109,7 +109,7 @@ fn main() -> io::Result<()> {
         }
       }
     }
-    enemies.retain(|x| x.translation.x > 5.0);
+    enemies.retain(|x| x.translation.x > 3.0);
     
     //3, Draw state to screen
     stdout.queue(terminal::Clear(terminal::ClearType::All))?;

@@ -9,7 +9,7 @@ pub fn normalize_usize(min:usize, max:usize, current:usize) -> usize {
     if min == max {
         return min;
     }
-    return (current - min) / (max - min);
+    return (current - min) % (max - min);
 }
 
 pub fn rand_range(range:usize) -> usize {
