@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::{self, Write, Error, ErrorKind};
 use std::time::Duration;
 use std::fs;
 use std::time::Instant;
@@ -44,13 +44,28 @@ fn load_sprites() -> Result<Vec<Sprite>, io::Error> {
   let dir = fs::read_dir(path)?;
   for entry in dir {
     let u_entry = entry?;
-    if u_entry.metadata()?.is_file() {
+    if u_entry.metadata()?.is_file() && u_entry.file_name() != "player.txt" {
       let sprite = Sprite::load(&u_entry.path())?;
       sprites.push(sprite);
     }
   }
 
   return Ok(sprites);
+}
+
+fn load_player_sprite() -> Result<Sprite, io::Error> {
+  let mut path = std::env::current_exe()?;
+  path.push(sprite_folder_path());
+
+  let dir = fs::read_dir(path)?;
+  for entry in dir {
+    let u_entry = entry?;
+    if u_entry.metadata()?.is_file() && u_entry.file_name() == "player.txt" {
+      return Ok(Sprite::load(&u_entry.path())?);
+    }
+  }
+
+  return Err(Error::new(ErrorKind::Other, "Could not find file"));
 }
 
 fn main() -> io::Result<()> {
@@ -60,8 +75,13 @@ fn main() -> io::Result<()> {
   // Initialize terminal.
   enable_raw_mode()?;
   let (cols, rows) = size()?;
-  let game_size : Vector2D<u16> = Vector2D::new(30, 10);
+  let game_size : Vector2D<u16> = Vector2D::new(120, 32);
   execute!(stdout, SetSize(game_size.x, game_size.y))?;
+
+  let player_sprite = load_player_sprite()?;
+  let mut player_pos: Vector2D<f32> = Vector2D::new(0.0, game_size.y as f32 * 0.5 - 4.0);
+  let mut player_frame: f32 = 0.0;
+  const PLAYER_SIZE : f32 = 30.0;
 
   let sprites = load_sprites()?;
   let mut keystrokes = Vec::<KeyEvent>::new();
@@ -75,7 +95,7 @@ fn main() -> io::Result<()> {
     while poll(Duration::from_secs(0)).is_ok_and(|x| x == true) {
       match read()? {
           crossterm::event::Event::Key(key_event) => 
-            if matches!(key_event.kind, crossterm::event::KeyEventKind::Press) {
+            if !matches!(key_event.kind, crossterm::event::KeyEventKind::Release) {
               keystrokes.push(key_event);
             },
           _ => ()
@@ -84,6 +104,14 @@ fn main() -> io::Result<()> {
     for keystroke in keystrokes.iter() {
       if matches!(keystroke.code, KeyCode::Esc) || (matches!(keystroke.code, KeyCode::Char('c')) && matches!(keystroke.modifiers, KeyModifiers::CONTROL)) {
           break 'game_loop;
+      }
+      else if matches!(keystroke.code, KeyCode::Char('w')) {
+        player_pos.y -= 1.0;
+        player_pos.y = f32::max(player_pos.y, 0.0);
+      }
+      else if matches!(keystroke.code, KeyCode::Char('s')) {
+        player_pos.y += 1.0;
+        player_pos.y = f32::min(player_pos.y, game_size.y as f32);
       }
     }
     keystrokes.clear();
@@ -98,7 +126,7 @@ fn main() -> io::Result<()> {
     move_straight(&mut enemies, delta);
 
     for enemy in enemies.iter_mut() {
-      if enemy.translation.x < 3.0 {
+      if enemy.translation.x < PLAYER_SIZE {
         let updated_health = health.checked_sub(enemy.damage);
         
         if updated_health.is_some() {
@@ -109,7 +137,7 @@ fn main() -> io::Result<()> {
         }
       }
     }
-    enemies.retain(|x| x.translation.x > 3.0);
+    enemies.retain(|x| x.translation.x > PLAYER_SIZE);
     
     //3, Draw state to screen
     stdout.queue(terminal::Clear(terminal::ClearType::All))?;
@@ -117,6 +145,8 @@ fn main() -> io::Result<()> {
       let sprite = &sprites[enemy.texture_index];
       draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout, &game_size);
     }
+    draw_sprite(&player_sprite, player_frame as usize, &player_pos, &stdout, &game_size);
+    player_frame += delta * 10.0;
     let _ = stdout.queue(cursor::MoveTo(game_size.x, game_size.y));
     stdout.flush()?;
 
