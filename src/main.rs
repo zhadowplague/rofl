@@ -3,6 +3,7 @@ use std::time::Duration;
 use std::fs;
 use std::time::Instant;
 use crossterm::event::{poll, read, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::style;
 use crossterm::terminal::enable_raw_mode;
 use crossterm::{ 
   execute, cursor, QueueableCommand, terminal, terminal::{SetSize, size}
@@ -81,6 +82,8 @@ fn main() -> io::Result<()> {
   let player_sprite = load_player_sprite()?;
   let mut player_pos: Vector2D<f32> = Vector2D::new(0.0, game_size.y as f32 * 0.5 - 4.0);
   let mut player_frame: f32 = 0.0;
+  let mut bullets = Vec::<Vector2D<f32>>::new();
+  let mut cooldown = 0.0;
   const PLAYER_SIZE : f32 = 30.0;
 
   let sprites = load_sprites()?;
@@ -95,9 +98,9 @@ fn main() -> io::Result<()> {
     while poll(Duration::from_secs(0)).is_ok_and(|x| x == true) {
       match read()? {
           crossterm::event::Event::Key(key_event) => 
-            if !matches!(key_event.kind, crossterm::event::KeyEventKind::Release) {
-              keystrokes.push(key_event);
-            },
+            
+              keystrokes.push(key_event)
+            ,
           _ => ()
       }
     }
@@ -113,15 +116,22 @@ fn main() -> io::Result<()> {
         player_pos.y += 1.0;
         player_pos.y = f32::min(player_pos.y, game_size.y as f32);
       }
+      else if matches!(keystroke.code, KeyCode::Char(' ')) && cooldown < 0.0 {
+        bullets.push(Vector2D::new(8.0, player_pos.y + 5.0));
+        cooldown = 0.1;
+      }
     }
     keystrokes.clear();
 
     //2. Update state
+    cooldown -= delta;
+
     if enemies.len() < 1 {
       let assigned_sprite = rand_range(sprites.len());
       let assigned_sprite_height = sprites[assigned_sprite].frames.len();
       enemies.push(EnemyData::new(start.elapsed().as_secs(), &game_size, assigned_sprite, assigned_sprite_height));
     }
+
     animate(&mut enemies, delta);
     move_straight(&mut enemies, delta);
 
@@ -137,13 +147,23 @@ fn main() -> io::Result<()> {
         }
       }
     }
-    enemies.retain(|x| x.translation.x > PLAYER_SIZE);
+
+    for bullet in bullets.iter_mut() {
+      bullet.x += delta * 50.0;
+    }
+    bullets.retain(|b| (b.x as u16) + 1 < game_size.x);
+
+    enemies.retain(|x| x.translation.x > PLAYER_SIZE && !bullets.iter().any(|b| b.x as u16 == x.translation.x as u16 && (b.y as i16 - x.translation.y as i16).abs() < 3));
     
     //3, Draw state to screen
     stdout.queue(terminal::Clear(terminal::ClearType::All))?;
     for enemy in enemies.iter() {
       let sprite = &sprites[enemy.texture_index];
       draw_sprite(sprite, enemy.current_frame as usize, &enemy.translation, &stdout, &game_size);
+    }
+    for bullet in bullets.iter() {
+      let _ = stdout.queue(cursor::MoveTo(bullet.x as u16, bullet.y as u16));
+      let _ = stdout.queue(style::Print('-'));
     }
     draw_sprite(&player_sprite, player_frame as usize, &player_pos, &stdout, &game_size);
     player_frame += delta * 10.0;
