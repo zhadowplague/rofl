@@ -126,7 +126,7 @@ fn main() -> io::Result<()> {
     //2. Update state
     cooldown -= delta;
 
-    if enemies.len() < 1 {
+    if enemies.len() < 2 {
       let assigned_sprite = rand_range(sprites.len());
       let assigned_sprite_height = sprites[assigned_sprite].frames.len();
       enemies.push(EnemyData::new(start.elapsed().as_secs(), &game_size, assigned_sprite, assigned_sprite_height));

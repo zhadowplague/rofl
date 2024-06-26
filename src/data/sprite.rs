@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 pub struct Sprite {
     pub frames : Vec<Vec<String>>,
+    pub frame_lengths : Vec<Vec<usize>>,
     pub max_width : u16
 }
 
@@ -11,24 +12,30 @@ impl Sprite {
     pub fn load(path:&PathBuf) -> Result<Self, io::Error> {
         let file = File::open(path)?;
         let reader: BufReader<File> = BufReader::new(file);
+        let mut frame_lengths = Vec::<Vec<usize>>::new();
         let mut character_rows = Vec::<Vec<String>>::new();
-        character_rows.push(Vec::<String>::new());
+        character_rows.push(Vec::new());
         for line in reader.lines() {
             let unwraped_line = line?;
             if unwraped_line.contains("framedivider") {
-                character_rows.push(Vec::<String>::new());
+                character_rows.push(Vec::new());
                 continue;
             }
             let current_row = character_rows.len() - 1;
             character_rows[current_row].push(unwraped_line);
         }
         let mut max_width = 0;
-        for line in character_rows.iter() {
-            let len = line.len();
-            if len > max_width {
-                max_width = len;
+        for frame in character_rows.iter() {
+            let mut frame_length: Vec<usize> = Vec::new();
+            for line in frame {
+                let len = line.char_indices().count();
+                if len > max_width {
+                    max_width = len;
+                }
+                frame_length.push(len);
             }
+            frame_lengths.push(frame_length);
         }
-        return Ok(Sprite{ frames: character_rows, max_width : max_width as u16 });
+        return Ok(Sprite{ frames: character_rows, frame_lengths, max_width : max_width as u16 });
     }
 }

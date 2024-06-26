@@ -20,8 +20,13 @@ pub fn draw_sprite(sprite:&Sprite, frame:usize, translation:&Vector2D<f32>, mut 
             let _ = stdout_handle.queue(cursor::MoveTo(x, y + row));
             let overflow = (x + sprite.max_width).checked_sub(screen_size_x);
             if overflow.is_some_and(|x| x > 0) {
-                let (first_line, _second_line) = line.split_at(line.len() - overflow.unwrap() as usize);
-                let _ = stdout_handle.queue(style::Print(first_line));
+                let split_point = sprite.frame_lengths[active_frame][row as usize].checked_sub(overflow.unwrap() as usize);
+                if split_point.is_some() {
+                    let mut char_indices = line.char_indices();
+                    let byte_index = char_indices.nth(split_point.unwrap()).map_or(line.len(), |(index, _)| index);
+                    let (first_line, _second_line) = line.split_at(byte_index);
+                    let _ = stdout_handle.queue(style::Print(first_line));
+                }
             } else {
                 let _ = stdout_handle.queue(style::Print(line));
             } 
