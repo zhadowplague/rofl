@@ -2,8 +2,8 @@ use std::io::{self, Write, Error, ErrorKind};
 use std::time::Duration;
 use std::fs;
 use std::time::Instant;
-use constants::{MAX_BULLET_COUNT, MAX_ENEMY_COUNT};
-use crossterm::event::{poll, read, KeyCode, KeyEvent, KeyModifiers};
+use constants::{sprite_folder_path, MAX_BULLET_COUNT, MAX_ENEMY_COUNT, PLAYER_SIZE};
+use crossterm::event::{poll, read, KeyCode, KeyModifiers};
 use crossterm::style;
 use crossterm::terminal::enable_raw_mode;
 use crossterm::{ 
@@ -24,21 +24,6 @@ use crate::operations::drawing::draw_sprite;
 
 mod utils;
 mod constants;
-
-#[cfg(not(debug_assertions))]
-const SPRITE_FOLDER : &str = "sprites";
-#[cfg(debug_assertions)]
-const SPRITE_FOLDER_DEBUG : &str = "..\\..\\..\\sprites";
-
-#[cfg(debug_assertions)]
-fn sprite_folder_path() -> &'static str{
-  return SPRITE_FOLDER_DEBUG
-}
-
-#[cfg(not(debug_assertions))]
-fn sprite_folder_path() -> &'static str{
-  return SPRITE_FOLDER;
-}
 
 fn load_sprites() -> Result<Vec<Sprite>, io::Error> {
   let mut sprites = Vec::<Sprite>::new();
@@ -87,44 +72,36 @@ fn main() -> io::Result<()> {
   let mut player_frame: f32 = 0.0;
   let mut bullets = Vec::<Vector2D<f32>>::new();
   let mut cooldown = 0.0;
-  const PLAYER_SIZE : f32 = 30.0;
 
   let sprites = load_sprites()?;
-  let mut keystrokes = Vec::<KeyEvent>::new();
   let mut enemies = Vec::<EnemyData>::new();
   let mut delta = 0.0;
   let mut health:usize = 50;
 
   'game_loop: loop {
     let frame_start = Instant::now();
+
     //1. Handle user input
     while poll(Duration::from_secs(0)).is_ok_and(|x| x == true) {
-      match read()? {
-          crossterm::event::Event::Key(key_event) => 
-            
-              keystrokes.push(key_event)
-            ,
-          _ => ()
+      let read_event = read()?;
+      if let crossterm::event::Event::Key(keystroke) = read_event {
+        if matches!(keystroke.code, KeyCode::Esc) || (matches!(keystroke.code, KeyCode::Char('c')) && matches!(keystroke.modifiers, KeyModifiers::CONTROL)) {
+            break 'game_loop;
+        }
+        else if matches!(keystroke.code, KeyCode::Char('w')) {
+          player_pos.y -= 1.0;
+          player_pos.y = f32::max(player_pos.y, 0.0);
+        }
+        else if matches!(keystroke.code, KeyCode::Char('s')) {
+          player_pos.y += 1.0;
+          player_pos.y = f32::min(player_pos.y, game_size.y as f32);
+        }
+        else if matches!(keystroke.code, KeyCode::Char(' ')) && cooldown < 0.0 && bullets.len() < MAX_BULLET_COUNT {
+          bullets.push(Vector2D::new(8.0, player_pos.y + 5.0));
+          cooldown = 0.1;
+        }
       }
     }
-    for keystroke in keystrokes.iter() {
-      if matches!(keystroke.code, KeyCode::Esc) || (matches!(keystroke.code, KeyCode::Char('c')) && matches!(keystroke.modifiers, KeyModifiers::CONTROL)) {
-          break 'game_loop;
-      }
-      else if matches!(keystroke.code, KeyCode::Char('w')) {
-        player_pos.y -= 1.0;
-        player_pos.y = f32::max(player_pos.y, 0.0);
-      }
-      else if matches!(keystroke.code, KeyCode::Char('s')) {
-        player_pos.y += 1.0;
-        player_pos.y = f32::min(player_pos.y, game_size.y as f32);
-      }
-      else if matches!(keystroke.code, KeyCode::Char(' ')) && cooldown < 0.0 && bullets.len() < MAX_BULLET_COUNT {
-        bullets.push(Vector2D::new(8.0, player_pos.y + 5.0));
-        cooldown = 0.1;
-      }
-    }
-    keystrokes.clear();
 
     //2. Update state
     cooldown -= delta;

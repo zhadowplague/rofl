@@ -24,7 +24,7 @@ pub fn remove_enemy_bullets_under_collision(enemies:&mut Vec<EnemyData>, bullets
     let mut i = 0;
     for enemy in enemies.iter() {
         let enemy_sprite = &sprites[enemy.texture_index];
-        if enemy.translation.x < PLAYER_SIZE as f32 {
+        if enemy.translation.x < PLAYER_SIZE {
             en.push(i);
         }
         else {
