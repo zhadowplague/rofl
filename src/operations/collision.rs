@@ -22,7 +22,7 @@ pub fn remove_enemy_bullets_under_collision(enemies:&mut Vec<EnemyData>, bullets
     let mut en = stack![usize; 10];
 
     let mut i = 0;
-    for enemy in enemies.iter() {
+    for enemy in enemies.iter_mut() {
         let enemy_sprite = &sprites[enemy.texture_index];
         if enemy.translation.x < PLAYER_SIZE {
             en.push(i);
@@ -32,7 +32,13 @@ pub fn remove_enemy_bullets_under_collision(enemies:&mut Vec<EnemyData>, bullets
             let mut bl = stack![usize; 20];
             for bullet in bullets.iter() {
                 if within(&enemy.translation, bullet, enemy_sprite.max_height, enemy_sprite.max_width) {
-                    en.push(i);
+                    let new_health = enemy.health.checked_sub(1);
+                    if new_health.is_none() {
+                        en.push(i);
+                    }
+                    else {
+                        enemy.health = new_health.unwrap();
+                    }
                     bl.push(j);
                     break;
                 }
