@@ -5,7 +5,8 @@ use std::path::PathBuf;
 pub struct Sprite {
     pub frames : Vec<Vec<String>>,
     pub frame_lengths : Vec<Vec<usize>>,
-    pub max_width : u16
+    pub max_width : usize,
+    pub max_height : usize
 }
 
 impl Sprite {
@@ -25,6 +26,7 @@ impl Sprite {
             character_rows[current_row].push(unwraped_line);
         }
         let mut max_width = 0;
+        let mut max_height = 0;
         for frame in character_rows.iter() {
             let mut frame_length: Vec<usize> = Vec::new();
             for line in frame {
@@ -34,8 +36,12 @@ impl Sprite {
                 }
                 frame_length.push(len);
             }
+            let height = frame_length.len();
+            if height > max_height {
+                max_height = height;
+            }
             frame_lengths.push(frame_length);
         }
-        return Ok(Sprite{ frames: character_rows, frame_lengths, max_width : max_width as u16 });
+        return Ok(Sprite{ frames: character_rows, frame_lengths, max_width, max_height });
     }
 }

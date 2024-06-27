@@ -2,12 +2,14 @@ use std::io::{self, Write, Error, ErrorKind};
 use std::time::Duration;
 use std::fs;
 use std::time::Instant;
+use constants::{MAX_BULLET_COUNT, MAX_ENEMY_COUNT};
 use crossterm::event::{poll, read, KeyCode, KeyEvent, KeyModifiers};
 use crossterm::style;
 use crossterm::terminal::enable_raw_mode;
 use crossterm::{ 
   execute, cursor, QueueableCommand, terminal, terminal::{SetSize, size}
 };
+use operations::collision::{remove_bullets_off_screen, remove_enemy_bullets_under_collision};
 use utils::rand_range;
 use vector2d::Vector2D;
 
@@ -21,6 +23,7 @@ use crate::operations::animating::animate;
 use crate::operations::drawing::draw_sprite;
 
 mod utils;
+mod constants;
 
 #[cfg(not(debug_assertions))]
 const SPRITE_FOLDER : &str = "sprites";
@@ -116,7 +119,7 @@ fn main() -> io::Result<()> {
         player_pos.y += 1.0;
         player_pos.y = f32::min(player_pos.y, game_size.y as f32);
       }
-      else if matches!(keystroke.code, KeyCode::Char(' ')) && cooldown < 0.0 {
+      else if matches!(keystroke.code, KeyCode::Char(' ')) && cooldown < 0.0 && bullets.len() < MAX_BULLET_COUNT {
         bullets.push(Vector2D::new(8.0, player_pos.y + 5.0));
         cooldown = 0.1;
       }
@@ -126,9 +129,9 @@ fn main() -> io::Result<()> {
     //2. Update state
     cooldown -= delta;
 
-    if enemies.len() < 2 {
+    if enemies.len() < 2 && enemies.len() < MAX_ENEMY_COUNT {
       let assigned_sprite = rand_range(sprites.len());
-      let assigned_sprite_height = sprites[assigned_sprite].frames.len();
+      let assigned_sprite_height = sprites[assigned_sprite].max_height;
       enemies.push(EnemyData::new(start.elapsed().as_secs(), &game_size, assigned_sprite, assigned_sprite_height));
     }
 
@@ -151,9 +154,8 @@ fn main() -> io::Result<()> {
     for bullet in bullets.iter_mut() {
       bullet.x += delta * 50.0;
     }
-    bullets.retain(|b| (b.x as u16) + 1 < game_size.x);
-
-    enemies.retain(|x| x.translation.x > PLAYER_SIZE && !bullets.iter().any(|b| b.x as u16 == x.translation.x as u16 && (b.y as i16 - x.translation.y as i16).abs() < 3));
+    remove_bullets_off_screen(&mut bullets, game_size.x - 1);
+    remove_enemy_bullets_under_collision(&mut enemies, &mut bullets, &sprites);
     
     //3, Draw state to screen
     stdout.queue(terminal::Clear(terminal::ClearType::All))?;
@@ -167,7 +169,8 @@ fn main() -> io::Result<()> {
     }
     draw_sprite(&player_sprite, player_frame as usize, &player_pos, &stdout, &game_size);
     player_frame += delta * 10.0;
-    let _ = stdout.queue(cursor::MoveTo(game_size.x, game_size.y));
+    let _ = stdout.queue(cursor::MoveTo(game_size.x - 10, game_size.y));
+    let _ = stdout.queue(style::Print(delta));
     stdout.flush()?;
 
     delta = frame_start.elapsed().as_secs_f32();

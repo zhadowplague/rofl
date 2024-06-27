@@ -18,7 +18,7 @@ pub fn draw_sprite(sprite:&Sprite, frame:usize, translation:&Vector2D<f32>, mut 
         }
         if x < screen_size_x {
             let _ = stdout_handle.queue(cursor::MoveTo(x, y + row));
-            let overflow = (x + sprite.max_width).checked_sub(screen_size_x);
+            let overflow = (x + sprite.max_width as u16).checked_sub(screen_size_x);
             if overflow.is_some_and(|x| x > 0) {
                 let split_point = sprite.frame_lengths[active_frame][row as usize].checked_sub(overflow.unwrap() as usize);
                 if split_point.is_some() {
