@@ -19,6 +19,7 @@ use crate::data::enemy::EnemyData;
 
 mod operations;
 use crate::operations::moving::move_straight;
+use crate::operations::moving::move_sin;
 use crate::operations::animating::animate;
 use crate::operations::drawing::draw_sprite;
 
@@ -106,14 +107,18 @@ fn main() -> io::Result<()> {
     //2. Update state
     cooldown -= delta;
 
-    if enemies.len() < 2 && enemies.len() < MAX_ENEMY_COUNT {
+    if enemies.len() < 4 && enemies.len() < MAX_ENEMY_COUNT {
       let assigned_sprite = rand_range(sprites.len());
       let assigned_sprite_height = sprites[assigned_sprite].max_height;
       enemies.push(EnemyData::new(start.elapsed().as_secs(), &game_size, assigned_sprite, assigned_sprite_height));
     }
 
+    let enemy_count = enemies.len();
     animate(&mut enemies, delta);
-    move_straight(&mut enemies, delta);
+    move_straight(&mut enemies[0 .. usize::min(enemy_count, 2)], delta);
+    if enemy_count > 2 {
+      move_sin(&mut enemies[2 .. enemy_count], delta);
+    }
 
     for enemy in enemies.iter_mut() {
       if enemy.translation.x < PLAYER_SIZE {
